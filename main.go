@@ -16,6 +16,8 @@ func main() {
 		panic(err)
 	}
 
+	outputPath := path.Join(curUser.HomeDir, ".venture")
+
 	fmt.Printf("What's ~%v been up to?\n~%v", curUser.Username, curUser.Username)
 	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')
@@ -23,9 +25,16 @@ func main() {
 		panic(err)
 	}
 
+	if len(input) < 1 {
+		err = os.Remove(outputPath)
+		if err != nil {
+			panic(err)
+		}
+		return
+	}
+
 	input = "~"+curUser.Username+input
 	
-	outputPath := path.Join(curUser.HomeDir, ".venture")
 	err = ioutil.WriteFile(outputPath, []byte(input), 0644)
 	if err != nil {
 		panic(err)
