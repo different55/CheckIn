@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/user"
@@ -103,15 +101,10 @@ func SetStatus(args []string) error {
 	outputPath := path.Join(curUser.HomeDir, ".checkin")
 
 	// Prompt user for input
-	fmt.Printf("What's ~%v been up to?\n~%v", curUser.Username, curUser.Username)
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
-	if err != nil && err != io.EOF {
+	input, err := PromptInput()
+	if err != nil {
 		return err
 	}
-
-	// Strip whitespace from right
-	input = strings.TrimRight(input, " \n\t\r")
 
 	// Remove file on blank input
 	if input == "" {
@@ -124,9 +117,6 @@ func SetStatus(args []string) error {
 		}
 		return nil
 	}
-
-	// Prepend status with user's name
-	input = fmt.Sprintf("~%s%s", curUser.Username, input)
 
 	if *includeWd {
 		wd, err := os.Getwd()
