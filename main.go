@@ -116,7 +116,7 @@ func SetVenture(args []string) error {
 	}
 
 	// Prepend status with user's name
-	input = "~" + curUser.Username + input
+	input = fmt.Sprintf("~%s%s", curUser.Username, input)
 
 	// Write file and create if it doesn't exist as world-readable.
 	err = ioutil.WriteFile(outputPath, []byte(input), 0644)
