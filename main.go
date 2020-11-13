@@ -18,12 +18,12 @@ func main() {
 	flag.Parse()
 	switch flag.Arg(0) {
 	case "set":
-		err := SetVenture(flag.Args()[1:])
+		err := SetStatus(flag.Args()[1:])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Could not set: %v", err)
 		}
 	case "get":
-		err := GetVenture(flag.Args()[1:])
+		err := GetStatus(flag.Args()[1:])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Could not get: %v", err)
 		}
@@ -33,63 +33,63 @@ func main() {
 	}
 }
 
-// GetVenture collects all recent ventures from all users on the system.
-// Any errors that occur while pulling individual ventures are silently ignored
-func GetVenture(args []string) error {
+// GetStatus collects all recent statuses from all users on the system.
+// Any errors that occur while pulling individual statuss are silently ignored
+func GetStatus(args []string) error {
 	getFlags := flag.NewFlagSet(os.Args[0]+" get", flag.ExitOnError)
-	freshDays := getFlags.Int("freshness", 14, "get all ventures newer than this number of days")
+	freshDays := getFlags.Int("freshness", 14, "get all statuses newer than this number of days")
 	getFlags.Parse(args)
 
 	freshLimit := time.Now().AddDate(0, 0, *freshDays*-1)
 
-	allVenturePaths, err := filepath.Glob("/home/*/.venture")
+	allStatusPaths, err := filepath.Glob("/home/*/.checkin")
 	if err != nil {
 		// *Should* never happen, since path is hardcoded and that's the only reason Glob can error out.
 		return err
 	}
 
-	// Filter out any ventures that are older than our cutoff time.
-	freshVenturePaths := make([]string, 0, len(allVenturePaths))
-	for _, venturePath := range allVenturePaths {
-		ventureInfo, err := os.Stat(venturePath)
+	// Filter out any statuses that are older than our cutoff time.
+	freshStatusPaths := make([]string, 0, len(allStatusPaths))
+	for _, statusPath := range allStatusPaths {
+		statusInfo, err := os.Stat(statusPath)
 		if err != nil {
 			continue
 		}
-		if ventureInfo.ModTime().After(freshLimit) {
-			freshVenturePaths = append(freshVenturePaths, venturePath)
+		if statusInfo.ModTime().After(freshLimit) {
+			freshStatusPaths = append(freshStatusPaths, statusPath)
 		}
 	}
 
-	// Print the contents of all ventures
-	for _, venturePath := range freshVenturePaths {
-		ventureBytes, err := ioutil.ReadFile(venturePath)
+	// Print the contents of all statuses
+	for _, statusPath := range freshStatusPaths {
+		statusBytes, err := ioutil.ReadFile(statusPath)
 		if err != nil {
 			continue
 		}
-		venture := string(ventureBytes)
+		status := string(statusBytes)
 
 		// Check to see if file starts with user's name.
-		if !strings.HasPrefix(venture, "~") {
+		if !strings.HasPrefix(status, "~") {
 			// Strip /home from path
-			homelessPath, err := filepath.Rel("/home", venturePath)
+			homelessPath, err := filepath.Rel("/home", statusPath)
 			if err != nil {
 				continue
 			}
-			// Strip .venture from path, leaving us with the user's name.
+			// Strip .checkin from path, leaving us with the user's name.
 			username := filepath.Dir(homelessPath)
-			venture = fmt.Sprintf("~%s: %s", username, venture)
+			status = fmt.Sprintf("~%s: %s", username, status)
 		}
 
 		// Trim trailing newline (if any)
-		venture = strings.TrimSpace(venture)
+		status = strings.TrimSpace(status)
 
-		fmt.Println(venture)
+		fmt.Println(status)
 	}
 	return nil
 }
 
-// SetVenture sets the curent user's venture, either by reading the value from the command line or by prompting the user to input it interactively.
-func SetVenture(args []string) error {
+// SetStatus sets the curent user's status, either by reading the value from the command line or by prompting the user to input it interactively.
+func SetStatus(args []string) error {
 	setFlags := flag.NewFlagSet(os.Args[0]+" set", flag.ExitOnError)
 	includeWd := setFlags.Bool("include-wd", false, "if set, appends working directory to your message")
 	setFlags.Parse(args)
@@ -99,8 +99,8 @@ func SetVenture(args []string) error {
 		return err
 	}
 
-	// User status is written to ~/.venture
-	outputPath := path.Join(curUser.HomeDir, ".venture")
+	// User status is written to ~/.checkin
+	outputPath := path.Join(curUser.HomeDir, ".checkin")
 
 	// Prompt user for input
 	fmt.Printf("What's ~%v been up to?\n~%v", curUser.Username, curUser.Username)
