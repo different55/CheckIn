@@ -110,8 +110,8 @@ func SetStatus(args []string) error {
 		return err
 	}
 
-	// Strip whitespace
-	input = strings.TrimSpace(input)
+	// Strip whitespace from right
+	input = strings.TrimRight(input, " \n\t\r")
 
 	// Remove file on blank input
 	if input == "" {
