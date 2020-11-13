@@ -136,6 +136,9 @@ func SetVenture(args []string) error {
 
 		// If they're in their home directory, swap /home/user out for ~user
 		homelessPath, err := filepath.Rel(curUser.HomeDir, wd)
+
+		// Gotta be careful because Rel doesn't care if wd is a subdirectory of HomeDir,
+		// it'll slather as much "../../.." as it needs to make it relative.
 		if err == nil && !strings.HasPrefix(homelessPath, "..") {
 			wd = filepath.Join("~"+curUser.Username, homelessPath)
 		}
