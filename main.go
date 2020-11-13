@@ -1,15 +1,15 @@
 package main
 
 import (
-	"fmt"
+	"bufio"
 	"flag"
-	"path"
-	"path/filepath"
-	"os"
-	"os/user"
+	"fmt"
 	"io"
 	"io/ioutil"
-	"bufio"
+	"os"
+	"os/user"
+	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -79,10 +79,10 @@ func GetVenture(args []string) error {
 
 		// Trim trailing newline (if any)
 		venture = strings.TrimSpace(venture)
-		
+
 		fmt.Println(venture)
 	}
-	return nil	
+	return nil
 }
 
 // SetVenture sets the curent user's venture, either by reading the value from the command line or by prompting the user to input it interactively.
@@ -116,7 +116,7 @@ func SetVenture(args []string) error {
 	}
 
 	// Prepend status with user's name
-	input = "~"+curUser.Username+input
+	input = "~" + curUser.Username + input
 
 	// Write file and create if it doesn't exist as world-readable.
 	err = ioutil.WriteFile(outputPath, []byte(input), 0644)
