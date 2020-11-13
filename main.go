@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"flag"
 	"path"
 	"os"
 	"os/user"
@@ -11,6 +12,18 @@ import (
 )
 
 func main() {
+	flag.Parse()
+	switch flag.Arg(0) {
+	case "set":
+		SetVenture(flag.Args()[1:])
+	default:
+		fmt.Printf("Usage:\n\t%v set\n", os.Args[0])
+		flag.PrintDefaults()
+	}
+}
+
+// SetVenture sets the curent user's venture, either by reading the value from the command line or by prompting the user to input it interactively.
+func SetVenture(args []string) {
 	curUser, err := user.Current()
 	if err != nil {
 		panic(err)
