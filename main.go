@@ -90,6 +90,10 @@ func GetVenture(args []string) error {
 
 // SetVenture sets the curent user's venture, either by reading the value from the command line or by prompting the user to input it interactively.
 func SetVenture(args []string) error {
+	setFlags := flag.NewFlagSet(os.Args[0]+" set", flag.ExitOnError)
+	includeWd := setFlags.Bool("include-wd", false, "if set, appends working directory to your message")
+	setFlags.Parse(args)
+
 	curUser, err := user.Current()
 	if err != nil {
 		return err
@@ -106,8 +110,11 @@ func SetVenture(args []string) error {
 		return err
 	}
 
+	// Strip whitespace
+	input = strings.TrimSpace(input)
+
 	// Remove file on blank input
-	if strings.TrimSpace(input) == "" {
+	if input == "" {
 		err = os.Remove(outputPath)
 		// File already pre-non-existing is considered success.
 		if os.IsNotExist(err) {
@@ -120,6 +127,23 @@ func SetVenture(args []string) error {
 
 	// Prepend status with user's name
 	input = fmt.Sprintf("~%s%s", curUser.Username, input)
+
+	if *includeWd {
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		// If they're in their home directory, swap /home/user out for ~user
+		homelessPath, err := filepath.Rel(curUser.HomeDir, wd)
+		if err == nil && !strings.HasPrefix(homelessPath, "..") {
+			wd = filepath.Join("~"+curUser.Username, homelessPath)
+		}
+
+		input = fmt.Sprintf("%s (%s)", input, wd)
+	}
+
+	input = input + "\n"
 
 	// Write file and create if it doesn't exist as world-readable.
 	err = ioutil.WriteFile(outputPath, []byte(input), 0644)
