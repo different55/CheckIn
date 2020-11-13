@@ -36,8 +36,11 @@ func main() {
 // GetVenture collects all recent ventures from all users on the system.
 // Any errors that occur while pulling individual ventures are silently ignored
 func GetVenture(args []string) error {
-	// Set the expiration date for ventures at 2 weeks.
-	freshLimit := time.Now().AddDate(0, 0, -14)
+	getFlags := flag.NewFlagSet(os.Args[0]+" get", flag.ExitOnError)
+	freshDays := getFlags.Int("freshness", 14, "get all ventures newer than this number of days")
+	getFlags.Parse(args)
+
+	freshLimit := time.Now().AddDate(0, 0, *freshDays*-1)
 
 	allVenturePaths, err := filepath.Glob("/home/*/.venture")
 	if err != nil {
