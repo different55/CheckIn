@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"bufio"
+	"strings"
 )
 
 func main() {
@@ -18,8 +19,7 @@ func main() {
 		err := SetVenture(flag.Args()[1:])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Could not set: %v", err)
-		}
-		
+		}		
 	default:
 		fmt.Printf("Usage:\n\t%v set\n", os.Args[0])
 		flag.PrintDefaults()
@@ -45,9 +45,12 @@ func SetVenture(args []string) error {
 	}
 
 	// Remove file on blank input
-	if len(input) < 1 {
+	if strings.TrimSpace(input) == "" {
 		err = os.Remove(outputPath)
-		if err != nil {
+		// File already pre-non-existing is considered success.
+		if os.IsNotExist(err) {
+			return nil
+		} else if err != nil {
 			return err
 		}
 		return nil
