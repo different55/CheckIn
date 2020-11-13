@@ -15,7 +15,11 @@ func main() {
 	flag.Parse()
 	switch flag.Arg(0) {
 	case "set":
-		SetVenture(flag.Args()[1:])
+		err := SetVenture(flag.Args()[1:])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Could not set: %v", err)
+		}
+		
 	default:
 		fmt.Printf("Usage:\n\t%v set\n", os.Args[0])
 		flag.PrintDefaults()
@@ -23,10 +27,10 @@ func main() {
 }
 
 // SetVenture sets the curent user's venture, either by reading the value from the command line or by prompting the user to input it interactively.
-func SetVenture(args []string) {
+func SetVenture(args []string) error {
 	curUser, err := user.Current()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// User status is written to ~/.venture
@@ -37,16 +41,16 @@ func SetVenture(args []string) {
 	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')
 	if err != nil && err != io.EOF {
-		panic(err)
+		return err
 	}
 
 	// Remove file on blank input
 	if len(input) < 1 {
 		err = os.Remove(outputPath)
 		if err != nil {
-			panic(err)
+			return err
 		}
-		return
+		return nil
 	}
 
 	// Prepend status with user's name
@@ -55,6 +59,8 @@ func SetVenture(args []string) {
 	// Write file and create if it doesn't exist as world-readable.
 	err = ioutil.WriteFile(outputPath, []byte(input), 0644)
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
