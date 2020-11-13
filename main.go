@@ -28,7 +28,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Could not get: %v", err)
 		}
 	default:
-		fmt.Printf("Usage:\n\t%v <set|get>\n", os.Args[0])
+		fmt.Printf("Usage:\n\t%v <set|get> [--help]\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 }
