@@ -21,19 +21,20 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Could not set: %v", err)
 		}
 	case "get":
-		err := GetStatus(flag.Args()[1:])
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Could not get: %v", err)
-		}
+		GetStatus(flag.Args()[1:])
 	default:
-		fmt.Printf("Usage:\n\t%v <set|get> [--help]\n", os.Args[0])
+		fmt.Printf("Usage:\n")
+		fmt.Printf("\t%v set [--include-wd] [status]\n", os.Args[0])
+		fmt.Printf("\t\tstatuses must begin with your username")
+		fmt.Printf("\t%v get", os.Args[0])
 		flag.PrintDefaults()
+		GetStatus(flag.Args()[1:])
 	}
 }
 
 // GetStatus collects all recent statuses from all users on the system.
 // Any errors that occur while pulling individual statuss are silently ignored
-func GetStatus(args []string) error {
+func GetStatus(args []string) {
 	getFlags := flag.NewFlagSet(os.Args[0]+" get", flag.ExitOnError)
 	freshDays := getFlags.Int("freshness", 14, "get all statuses newer than this number of days")
 	getFlags.Parse(args)
@@ -43,7 +44,7 @@ func GetStatus(args []string) error {
 	allStatusPaths, err := filepath.Glob("/home/*/.checkin")
 	if err != nil {
 		// *Should* never happen, since path is hardcoded and that's the only reason Glob can error out.
-		return err
+		panic(err)
 	}
 
 	// Filter out any statuses that are older than our cutoff time.
@@ -83,7 +84,7 @@ func GetStatus(args []string) error {
 
 		fmt.Println(status)
 	}
-	return nil
+	return
 }
 
 // SetStatus sets the curent user's status, either by reading the value from the command line or by prompting the user to input it interactively.
