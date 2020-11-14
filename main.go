@@ -22,13 +22,16 @@ func main() {
 		}
 	case "get":
 		GetStatus(flag.Args()[1:])
+	case "help":
+		fallthrough
 	default:
 		fmt.Printf("Usage:\n")
 		fmt.Printf("\t%v set [--include-wd] [status]\n", os.Args[0])
-		fmt.Printf("\t\tstatuses must begin with your username")
-		fmt.Printf("\t%v get", os.Args[0])
+		fmt.Printf("\t\tstatuses must begin with your username\n")
+		fmt.Printf("\t\t--inclue-wd appends your working directory to your status\n")
+		fmt.Printf("\t%v get [--freshness=14]\n", os.Args[0])
+		fmt.Printf("\t\t--freshness gets all statuses newer than this number of days\n")
 		flag.PrintDefaults()
-		GetStatus(flag.Args()[1:])
 	}
 }
 
@@ -90,7 +93,7 @@ func GetStatus(args []string) {
 // SetStatus sets the curent user's status, either by reading the value from the command line or by prompting the user to input it interactively.
 func SetStatus(args []string) error {
 	setFlags := flag.NewFlagSet(os.Args[0]+" set", flag.ExitOnError)
-	includeWd := setFlags.Bool("include-wd", false, "if set, appends working directory to your message")
+	includeWd := setFlags.Bool("include-wd", false, "appends working directory to your message")
 	setFlags.Parse(args)
 
 	curUser, err := user.Current()
