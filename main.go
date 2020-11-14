@@ -100,10 +100,17 @@ func SetStatus(args []string) error {
 	// User status is written to ~/.checkin
 	outputPath := path.Join(curUser.HomeDir, ".checkin")
 
-	// Prompt user for input
-	input, err := PromptInput()
-	if err != nil {
-		return err
+	var input string
+
+	// Check if input was provided on the command line.
+	if len(setFlags.Args()) > 0 {
+		input = ArgsToStatus(setFlags.Args(), curUser)
+	} else {
+		// Prompt user for input
+		input, err = PromptInput()
+		if err != nil {
+			return err
+		}
 	}
 
 	// Remove file on blank input
@@ -137,6 +144,29 @@ func SetStatus(args []string) error {
 	return nil
 }
 
+// ArgsToStatus concatenates all arguments left over from a call to flag.Parse
+// and returns it as a well-formed status.
+func ArgsToStatus(args []string, curUser *user.User) string {
+	status := strings.Join(args, " ")
+	status = strings.TrimRight(status, " \n\t\r")
+	if status == "" {
+		return status
+	}
+
+	if strings.HasPrefix(status, "~"+curUser.Username) {
+		return status
+	}
+
+	if strings.HasPrefix(status, curUser.Username) {
+		return "~" + status
+	}
+
+	return fmt.Sprintf("~%s: %s", curUser.Username, status)
+}
+
+// GetFriendlyWd returns the friendliest equivalent to the working directory.
+// If we're in the user's home directory, we return a path relative to ~user.
+// If we're in that user's public_html directory, we return an http link to it.
 func GetFriendlyWd(curUser *user.User) (string, error) {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -157,7 +187,7 @@ func GetFriendlyWd(curUser *user.User) (string, error) {
 	}
 
 	// If the path is within the user's public_html directory, return an http link.
-	weblessPath := strings.TrimPrefix(homelessPath, "public_html/") 
+	weblessPath := strings.TrimPrefix(homelessPath, "public_html/")
 	if weblessPath != homelessPath {
 		return fmt.Sprintf("https://tilde.town/~%s/%s", curUser.Username, weblessPath), nil
 	}
