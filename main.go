@@ -119,20 +119,10 @@ func SetStatus(args []string) error {
 	}
 
 	if *includeWd {
-		wd, err := os.Getwd()
+		wd, err := GetFriendlyWd(curUser)
 		if err != nil {
 			return err
 		}
-
-		// If they're in their home directory, swap /home/user out for ~user
-		homelessPath, err := filepath.Rel(curUser.HomeDir, wd)
-
-		// Gotta be careful because Rel doesn't care if wd is a subdirectory of HomeDir,
-		// it'll slather as much "../../.." as it needs to make it relative.
-		if err == nil && !strings.HasPrefix(homelessPath, "..") {
-			wd = filepath.Join("~"+curUser.Username, homelessPath)
-		}
-
 		input = fmt.Sprintf("%s (%s)", input, wd)
 	}
 
@@ -145,4 +135,33 @@ func SetStatus(args []string) error {
 	}
 
 	return nil
+}
+
+func GetFriendlyWd(curUser *user.User) (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return wd, err
+	}
+
+	// Check if we're in the home directory.
+	homelessPath, err := filepath.Rel(curUser.HomeDir, wd)
+
+	// If the path couldn't be made relative to the user's home dir at all.
+	if err != nil {
+		return wd, nil
+	}
+
+	// If the path could only be made relative by traversing up the tree, it's also not in the home dir.
+	if strings.HasPrefix(homelessPath, "..") {
+		return wd, nil
+	}
+
+	// If the path is within the user's public_html directory, return an http link.
+	weblessPath := strings.TrimPrefix(homelessPath, "public_html/") 
+	if weblessPath != homelessPath {
+		return fmt.Sprintf("https://tilde.town/~%s/%s", curUser.Username, weblessPath), nil
+	}
+
+	// Otherwise make a friendly ~user/path.
+	return filepath.Join("~"+curUser.Username, homelessPath), nil
 }
