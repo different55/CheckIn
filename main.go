@@ -1,3 +1,7 @@
+// CheckIn is a way to let other people know what the heck you're up to.
+//
+// It's essentially a status. But like. For your terminal. Has that been
+// done already? Has to have been, right?
 package main
 
 import (
