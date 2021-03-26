@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"gitlab.com/golang-commonmark/linkify"
+	"html"
 	"io/ioutil"
 	"os"
 	"os/user"
@@ -40,6 +42,7 @@ func main() {
 func GetStatus(args []string) {
 	getFlags := flag.NewFlagSet(os.Args[0]+" get", flag.ExitOnError)
 	freshDays := getFlags.Int("freshness", 14, "get all statuses newer than this number of days")
+	htmlOutput := getFlags.Bool("output-html", false, "output statuses as a list of HTML links")
 	getFlags.Parse(args)
 
 	freshLimit := time.Now().AddDate(0, 0, *freshDays*-1)
@@ -62,6 +65,10 @@ func GetStatus(args []string) {
 		}
 	}
 
+	if *htmlOutput {
+		fmt.Println("<UL>")
+	}
+
 	// Print the contents of all statuses
 	for _, statusPath := range freshStatusPaths {
 		statusBytes, err := ioutil.ReadFile(statusPath)
@@ -69,6 +76,20 @@ func GetStatus(args []string) {
 			continue
 		}
 		status := string(statusBytes)
+
+		// Get user's name
+		// Strip /home from path
+		homelessPath, err := filepath.Rel("/home", statusPath)
+		if err != nil {
+			continue
+		}
+		username := filepath.Dir(homelessPath)
+
+		// Check to see if file starts with user's name.
+		// TODO: split this stuff out into like a normalizeStatus() function.
+		if !strings.HasPrefix(status, "~"+username) {
+			status = fmt.Sprintf("~%s: %s", username, status)
+		}
 
 		// Check to see if file starts with user's name.
 		if !strings.HasPrefix(status, "~") {
@@ -78,14 +99,52 @@ func GetStatus(args []string) {
 				continue
 			}
 			// Strip .checkin from path, leaving us with the user's name.
-			username := filepath.Dir(homelessPath)
+			username = filepath.Dir(homelessPath)
 			status = fmt.Sprintf("~%s: %s", username, status)
 		}
 
 		// Trim trailing newline (if any)
 		status = strings.TrimSpace(status)
 
+		// If HTML output is wanted, detect URLs and replace them with links.
+		if *htmlOutput {
+			position := 0
+			links := linkify.Links(status)
+			statusFragments := make([]string, 0, len(links)*2+1)
+			for _, v := range links {
+				// Copy the stuff before this link and since the last.
+				statusFragments = append(statusFragments, status[position:v.Start])
+
+				// Format the link
+				link := status[v.Start:v.End]
+				if v.Scheme == "" {
+					v.Scheme = "http://"
+				}
+
+				if !strings.HasPrefix(link, v.Scheme) {
+					link = v.Scheme + link
+				}
+
+				link = fmt.Sprintf("<A HREF=\"%s\">%s</A>", html.EscapeString(link), html.EscapeString(status[v.Start:v.End]))
+				// Copy the actual link
+				statusFragments = append(statusFragments, link)
+				position = v.End
+			}
+
+			// Copy everything that remains
+			statusFragments = append(statusFragments, status[position:])
+
+			// Replace the initial ~user with a link to their public_html page.
+			homepage := fmt.Sprintf("<A HREF=\"http://tilde.town/~%s\">~%s</A>", username, username)
+			statusFragments[0] = strings.Replace(statusFragments[0], "~"+username, homepage, 1)
+
+			status = "<LI>" + strings.Join(statusFragments, "") + "</LI>"
+		}
+
 		fmt.Println(status)
+	}
+	if *htmlOutput {
+		fmt.Println("</UL>")
 	}
 	return
 }
@@ -191,7 +250,7 @@ func GetFriendlyWd(curUser *user.User) (string, error) {
 	}
 
 	// If the path is within the user's public_html directory, return an http link.
-	weblessPath := strings.TrimPrefix(homelessPath, "public_html/")
+	weblessPath := strings.TrimPrefix(homelessPath, "public_html")
 	if weblessPath != homelessPath {
 		return fmt.Sprintf("https://tilde.town/~%s/%s", curUser.Username, weblessPath), nil
 	}
